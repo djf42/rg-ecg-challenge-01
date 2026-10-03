@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Analytics · ECG Rhythm Challenge</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23ee3c36%27 stroke-width=%272.4%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M2 12h5l2-5 4 10 2-5h7%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/brand.css?v=2026-10-03g">
+<style>
+  .wrap.wide{max-width:1120px}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:6px}
+  .top img{height:72px;width:auto}
+  .who{font-size:15px;color:var(--ink-muted);text-align:right}
+  .who button{margin-top:6px}
+  .filters{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin:18px 0 8px;padding:16px;background:var(--mist);border-radius:var(--radius-md)}
+  .filters label{display:flex;flex-direction:column;font-size:14px;font-weight:700;gap:4px}
+  .filters select{width:auto;min-width:170px;padding:9px 12px;font-size:16px}
+  .filters .check{flex-direction:row;align-items:center;gap:8px;font-weight:600;padding-bottom:8px}
+  .filters .check input{width:18px;height:18px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0 0}
+  @media (max-width:760px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .kpi{border:1px solid var(--mist);border-radius:var(--radius-md);padding:14px 16px}
+  .kpi b{display:block;font-family:var(--display);font-weight:800;font-size:34px;line-height:1.1;color:var(--navy);font-variant-numeric:tabular-nums}
+  .kpi.alert b{color:var(--red)}
+  .kpi span{font-size:15px;color:var(--ink-muted)}
+  .section{margin:30px 0 0}
+  .section-head{display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+  .section-head h2{font-size:26px;margin:0}
+  .legend{font-size:14px;color:var(--ink-muted);display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+  .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .bars{display:grid;gap:8px}
+  .bar-row{display:grid;grid-template-columns:minmax(170px,300px) 1fr 58px 70px;gap:10px;align-items:center;font-size:15px}
+  @media (max-width:640px){.bar-row{grid-template-columns:1fr 50px 60px}.bar-row .lbl{grid-column:1/4}}
+  .bar-row .lbl b{font-family:var(--display)}
+  .track{height:22px;background:var(--mist);border-radius:var(--radius-sm);overflow:hidden;display:flex}
+  .track .ok{background:var(--navy)}
+  .track .to{background:#c9cfd4}
+  .bar-row .val{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  .bar-row .tm{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-muted);font-size:14px}
+  /* confusion grid */
+  .cm{border-collapse:separate;border-spacing:3px;font-variant-numeric:tabular-nums;font-size:14px;min-width:720px}
+  .cm th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-muted);font-weight:700;padding:6px 4px;text-align:center;vertical-align:bottom}
+  .cm th.rowh{text-align:left;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink);font-weight:600;white-space:nowrap;padding-right:10px}
+  .cm th.rowh small{display:block;color:var(--ink-muted);font-weight:400;font-size:12px}
+  .cm td{width:84px;height:40px;text-align:center;border-radius:6px;font-weight:700}
+  .note{font-size:14px;color:var(--ink-muted);margin-top:8px}
+  .two{display:grid;grid-template-columns:1.3fr 1fr;gap:26px}
+  @media (max-width:860px){.two{grid-template-columns:1fr}}
+  .hist{display:flex;align-items:flex-end;gap:6px;height:180px;padding:0 0 4px;border-bottom:2px solid var(--navy)}
+  .hist div{flex:1;background:var(--navy);border-radius:4px 4px 0 0;min-height:2px;position:relative}
+  .hist div span{position:absolute;top:-20px;left:0;right:0;text-align:center;font-size:12px;color:var(--ink-muted)}
+  .hist-x{display:flex;gap:6px;font-size:12px;color:var(--ink-muted);margin-top:4px}
+  .hist-x span{flex:1;text-align:center}
+  .gate{text-align:left;max-width:560px}
+  .sample-banner{background:var(--red);color:var(--white);border-radius:var(--radius-md);padding:12px 16px;font-weight:700;margin:12px 0 0}
+  .exports{display:flex;gap:10px;flex-wrap:wrap}
+  .btn.sm{padding:9px 16px;font-size:16px}
+</style>
+<script>window.GAME = { boards: "rhythm_boards", attempts: "rhythm_attempts", prefix: "rhythm" };</script>
+</head>
+<body>
+<div class="wrap wide">
+  <section class="sheet">
+    <div id="gate" class="gate hidden">
+      <img class="logo-md" src="assets/recover-logo.webp" alt="RECOVER">
+      <p class="eyebrow">ECG Rhythm Challenge</p>
+      <h1>Learner analytics</h1>
+      <p class="muted">Sign in with an authorized Google account to see results.</p>
+      <div class="row"><button class="btn" id="signInBtn">Sign in with Google</button></div>
+      <p class="small" id="gateErr" style="color:var(--red-deep);margin-top:12px"></p>
+    </div>
+
+    <div id="dash" class="hidden">
+      <div class="top">
+        <div>
+          <p class="eyebrow">ECG Rhythm Challenge</p>
+          <h1 style="margin-bottom:4px">Learner analytics</h1>
+          <p class="muted" style="margin:0">Which rhythms learners miss, and what they mistake them for.</p>
+        </div>
+        <div class="who">
+          <img src="assets/recover-logo.webp" alt="RECOVER">
+          <div id="whoText"></div>
+          <button class="btn ghost sm hidden" id="signOutBtn">Sign out</button>
+        </div>
+      </div>
+      <div id="modeNotice" class="notice hidden" style="margin-top:14px"></div>
+
+      <div class="filters">
+        <label>Time period
+          <select id="fPeriod">
+            <option value="month">This month</option>
+            <option value="lastmonth">Last month</option>
+            <option value="90">Last 90 days</option>
+            <option value="365">Last 12 months</option>
+            <option value="all">All time</option>
+          </select>
+        </label>
+        <label>Role <select id="fRole"><option value="">All roles</option></select></label>
+        <label>Attempts
+          <select id="fAttempts">
+            <option value="first">First attempt per player</option>
+            <option value="all">Every attempt</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="fSample"> Show sample data</label>
+      </div>
+      <p class="note">"First attempt per player" shows what learners could recognize before practicing. Repeat plays raise scores, so use it to find the rhythms people genuinely struggle with.</p>
+      <div id="sampleBanner" class="sample-banner hidden">Sample data for demonstration only. These are not real learner results.</div>
+      <div id="empty" class="notice hidden"></div>
+
+      <div id="content">
+        <div class="kpis">
+          <div class="kpi"><b id="kGames">0</b><span>games in view</span></div>
+          <div class="kpi"><b id="kPlayers">0</b><span>players</span></div>
+          <div class="kpi"><b id="kPct">–</b><span>rhythms named correctly</span></div>
+          <div class="kpi"><b id="kTime">–</b><span>median time to a correct answer</span></div>
+        </div>
+        <div class="kpis">
+          <div class="kpi alert"><b id="kMissed">–</b><span>shockable rhythms called non-shockable (missed shocks)</span></div>
+          <div class="kpi alert"><b id="kWrongShock">–</b><span>non-shockable rhythms called shockable (inappropriate shocks)</span></div>
+          <div class="kpi"><b id="kTimeouts">–</b><span>rhythms left unanswered</span></div>
+          <div class="kpi"><b id="kScore">–</b><span>average points</span></div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h2>Accuracy by rhythm</h2>
+            <div class="legend">
+              <span><i class="sw" style="background:var(--navy)"></i>Correct</span>
+              <span><i class="sw" style="background:#c9cfd4"></i>Timed out</span>
+              <span><i class="sw" style="background:var(--mist)"></i>Wrong</span>
+              <label style="display:flex;gap:6px;align-items:center;font-weight:600">Sort
+                <select id="fSort" style="width:auto;padding:4px 8px;font-size:14px"><option value="order">By rhythm type</option><option value="hard">Hardest first</option></select>
+              </label>
+            </div>
+          </div>
+          <div class="bars" id="bars"></div>
+          <p class="note">The right-hand column is the median time to a correct answer.</p>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>What each rhythm was mistaken for</h2></div>
+          <div class="board-wrap"><table class="cm" id="cm"></table></div>
+          <p class="note">Each row is one rhythm; each cell is the share of learners who chose that answer. Navy cells are correct answers; red shading shows mistakes, darker meaning more common.</p>
+        </div>
+
+        <div class="section two">
+          <div>
+            <div class="section-head"><h2>Score distribution</h2></div>
+            <div class="hist" id="hist"></div>
+            <div class="hist-x" id="histx"></div>
+            <p class="note">Number of games by rhythms named correctly (0–10).</p>
+          </div>
+          <div>
+            <div class="section-head"><h2>By role</h2></div>
+            <div class="board-wrap" id="roles"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2>Export</h2></div>
+          <div class="exports">
+            <button class="btn ghost sm" id="expR">Rhythm summary (CSV)</button>
+            <button class="btn ghost sm" id="expRaw">Every answer (CSV)</button>
+          </div>
+          <p class="note">Exports use the filters above. Raw data contains anonymous player IDs, never names.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+  <footer id="footer"></footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/config.js?v=2026-10-03g"></script>
+<script src="js/store.js?v=2026-10-03g"></script>
+<script src="js/rhythms.js?v=2026-10-03g"></script>
+<script>
+const C = window.APP_CONFIG, L = window.RHYTHM_LIB, $ = id => document.getElementById(id);
+const ROLES = ["Veterinarian", "Specialist / resident", "Veterinary technician / nurse", "Student", "Other"];
+const CAT_ORDER = ["asys", "pea", "vf", "pvt", "rosc"];
+const ORDERED = CAT_ORDER.flatMap(c => L.RHYTHMS.filter(r => r.cat === c));
+let cache = { key: null, rows: [] }, view = [];
+
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+const median = arr => { if (!arr.length) return null; const s = [...arr].sort((a, b) => a - b), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const sec = ms => ms == null ? "–" : (ms / 1000).toFixed(1) + " s";
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+const shockable = cat => !!(L.catOf(cat) || {}).shockable;
+const label = r => L.catOf(r.cat).label;
+
+function sinceFor(p) {
+  const now = new Date();
+  if (p === "month") return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  if (p === "lastmonth") return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  if (p === "90") return new Date(now - 90 * 864e5);
+  if (p === "365") return new Date(now - 365 * 864e5);
+  return null;
+}
+function untilFor(p) { const now = new Date(); return p === "lastmonth" ? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)) : null; }
+
+/* ---------- sample data (clearly labeled, for demos) ---------- */
+function sampleData() {
+  let seed = 20261003; const rnd = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+  // plausible first-attempt answer patterns: [rhythmKey]: {answerCat: weight}
+  const P = {
+    pea38w:  { pea: .62, asys: .12, pvt: .14, vf: .06, rosc: .06 },
+    pea94n:  { pea: .55, rosc: .38, asys: .03, pvt: .02, vf: .02 },
+    pea164w: { pea: .41, pvt: .49, vf: .06, rosc: .02, asys: .02 },
+    pvt226:  { pvt: .66, pea: .18, vf: .14, asys: .01, rosc: .01 },
+    pvt268:  { pvt: .72, vf: .17, pea: .09, asys: .01, rosc: .01 },
+    asys:    { asys: .86, vf: .1, pea: .03, pvt: .005, rosc: .005 },
+    vfFine:  { vf: .44, asys: .5, pea: .04, pvt: .01, rosc: .01 },
+    vfMed:   { vf: .78, pvt: .12, asys: .06, pea: .03, rosc: .01 },
+    vfCoarse:{ vf: .63, pvt: .31, pea: .04, asys: .01, rosc: .01 },
+    rosc:    { rosc: .9, pea: .08, pvt: .01, vf: .005, asys: .005 }
+  };
+  const roleW = [[ROLES[0], .38], [ROLES[1], .14], [ROLES[2], .3], [ROLES[3], .14], [ROLES[4], .04]];
+  const roleAdj = { "Veterinarian": .05, "Specialist / resident": .18, "Veterinary technician / nurse": 0, "Student": -.1, "Other": -.05 };
+  const pickRole = () => { let x = rnd(); for (const [r, w] of roleW) { if ((x -= w) < 0) return r; } return ROLES[0]; };
+  const pick = (dist, boost, correctCat) => {
+    const w = Object.assign({}, dist); w[correctCat] = Math.min(.98, w[correctCat] + boost);
+    const tot = Object.values(w).reduce((a, b) => a + b, 0); let x = rnd() * tot;
+    for (const [k, v] of Object.entries(w)) { if ((x -= v) < 0) return k; } return correctCat;
+  };
+  const out = [], now = Date.now();
+  for (let p = 0; p < 160; p++) {
+    const uid = "sample-" + p, role = pickRole();
+    const plays = rnd() < .3 ? 2 + Math.floor(rnd() * 3) : 1;
+    let t = now - rnd() * 150 * 864e5;
+    for (let k = 0; k < plays; k++) {
+      const order = L.RHYTHMS.map(r => r).sort(() => rnd() - .5);
+      let score = 0, correct = 0, total = 0; const answers = [];
+      order.forEach((r, i) => {
+        const to = rnd() < .04;
+        const ans = to ? "" : pick(P[r.key], roleAdj[role] + k * .12, r.cat);
+        const c = ans === r.cat;
+        const ms = to ? 10000 : Math.round((c ? 1800 + rnd() * 5000 : 1200 + rnd() * 6500) * (r.cat === "pea" ? 1.25 : 1));
+        const pts = c ? Math.round(1000 - 900 * ms / 10000) : 0;
+        score += pts; correct += c ? 1 : 0; total += ms;
+        answers.push({ q: i + 1, k: r.key, r: ans, c, ms, to });
+      });
+      out.push({ uid, role, score, correct, total: 10, timeMs: total, answers, createdAt: new Date(t), source: "sample" });
+      t += (1 + rnd() * 20) * 864e5; if (t > now) t = now - rnd() * 864e5;
+    }
+  }
+  return out;
+}
+
+/* ---------- loading ---------- */
+async function refresh() {
+  const p = $("fPeriod").value, sample = $("fSample").checked;
+  $("sampleBanner").classList.toggle("hidden", !sample);
+  const key = (sample ? "S:" : "L:") + p;
+  if (cache.key !== key) {
+    $("empty").classList.add("hidden"); $("kGames").textContent = "…";
+    try {
+      const since = sinceFor(p), until = untilFor(p);
+      let rows = sample ? sampleData().filter(a => !since || a.createdAt >= since) : await Store.fetchAttempts(since);
+      if (until) rows = rows.filter(a => a.createdAt < until);
+      cache = { key, rows };
+    } catch (e) {
+      console.error(e);
+      const code = (e && e.code) || "unknown", msg = (e && e.message) || String(e);
+      showEmpty((code === "permission-denied"
+        ? "The database rules didn't recognize this account as a dashboard user. Check isAdmin() in the Firestore rules and that the rhythm rules were added (SETUP.md, ECG Rhythm Challenge section)."
+        : "Results couldn't load.") + "  Details: " + code + " \u2014 " + msg);
+      return;
+    }
+  }
+  applyFilters();
+}
+function applyFilters() {
+  const role = $("fRole").value, mode = $("fAttempts").value;
+  let rows = cache.rows.filter(a => !role || a.role === role);
+  if (mode === "first") {
+    const first = new Map();
+    rows.forEach(a => { const f = first.get(a.uid); if (!f || a.createdAt < f.createdAt) first.set(a.uid, a); });
+    rows = [...first.values()];
+  }
+  view = rows;
+  if (!rows.length) { showEmpty($("fSample").checked ? "No sample games in this period." : "No games in this view yet. Try a longer time period, or tick \u201CShow sample data\u201D to preview the dashboard."); return; }
+  $("empty").classList.add("hidden"); $("content").classList.remove("hidden");
+  render();
+}
+function showEmpty(msg) { $("empty").textContent = msg; $("empty").classList.remove("hidden"); $("content").classList.add("hidden"); }
+
+/* ---------- analysis ---------- */
+function analyze(rows) {
+  const by = {}; L.RHYTHMS.forEach(r => by[r.key] = { r, n: 0, correct: 0, timeouts: 0, msC: [], picks: { asys: 0, pea: 0, vf: 0, pvt: 0, rosc: 0, "": 0 } });
+  let shockN = 0, missed = 0, nonShockN = 0, wrongShock = 0, answered = 0, timeouts = 0, allMsC = [];
+  rows.forEach(a => (a.answers || []).forEach(x => {
+    const s = by[x.k]; if (!s) return;
+    s.n++; s.picks[x.to ? "" : x.r] = (s.picks[x.to ? "" : x.r] || 0) + 1;
+    if (x.c) { s.correct++; s.msC.push(x.ms); allMsC.push(x.ms); }
+    if (x.to) { s.timeouts++; timeouts++; return; }
+    answered++;
+    if (shockable(s.r.cat)) { shockN++; if (!shockable(x.r)) missed++; }
+    else { nonShockN++; if (shockable(x.r)) wrongShock++; }
+  }));
+  return { by, shockN, missed, nonShockN, wrongShock, timeouts, allMsC };
+}
+
+/* ---------- render ---------- */
+function render() {
+  const rows = view, A = analyze(rows);
+  const totalAns = rows.length * 10, totC = rows.reduce((s, a) => s + a.correct, 0);
+  $("kGames").textContent = rows.length.toLocaleString();
+  $("kPlayers").textContent = new Set(rows.map(a => a.uid)).size.toLocaleString();
+  $("kPct").textContent = pct(totC, totalAns) + "%";
+  $("kTime").textContent = sec(median(A.allMsC));
+  $("kMissed").textContent = pct(A.missed, A.shockN) + "%";
+  $("kWrongShock").textContent = pct(A.wrongShock, A.nonShockN) + "%";
+  $("kTimeouts").textContent = pct(A.timeouts, totalAns) + "%";
+  $("kScore").textContent = Math.round(rows.reduce((s, a) => s + a.score, 0) / rows.length).toLocaleString();
+
+  // accuracy bars
+  let list = ORDERED.map(r => A.by[r.key]);
+  if ($("fSort").value === "hard") list = [...list].sort((a, b) => pct(a.correct, a.n) - pct(b.correct, b.n));
+  const bars = $("bars"); bars.replaceChildren();
+  list.forEach(s => {
+    const row = el("div", "bar-row");
+    const lbl = el("div", "lbl"); const b = el("b", null, label(s.r)); const d = s.r.detail.replace(/^(?:(Fine|Coarse) )?VF: /, (m, k) => k ? k.toLowerCase() + ", " : ""); lbl.append(b, document.createTextNode(" \u00B7 " + d.charAt(0).toUpperCase() + d.slice(1)));
+    const t = el("div", "track"); const p = pct(s.correct, s.n), tp = pct(s.timeouts, s.n);
+    t.setAttribute("role", "img"); t.setAttribute("aria-label", p + "% correct, " + tp + "% timed out");
+    const ok = el("i", "ok"); ok.style.width = p + "%"; const to = el("i", "to"); to.style.width = tp + "%"; t.append(ok, to);
+    row.append(lbl, t, el("span", "val", p + "%"), el("span", "tm", sec(median(s.msC))));
+    bars.appendChild(row);
+  });
+
+  // confusion grid
+  const cm = $("cm"); cm.replaceChildren();
+  const head = el("tr"); head.appendChild(el("th"));
+  CAT_ORDER.forEach(c => head.appendChild(el("th", null, (L.catOf(c).short || L.catOf(c).label).replace("Ventricular fibrillation", "VF"))));
+  head.appendChild(el("th", null, "Timed out"));
+  const thead = el("thead"); thead.appendChild(head); cm.appendChild(thead);
+  const tb = el("tbody");
+  ORDERED.forEach(r => {
+    const s = A.by[r.key], tr = el("tr");
+    const th = el("th", "rowh", label(r)); th.appendChild(el("small", null, r.detail)); tr.appendChild(th);
+    CAT_ORDER.concat([""]).forEach(c => {
+      const v = pct(s.picks[c] || 0, s.n), td = el("td", null, s.n ? v + "%" : "–");
+      if (c === r.cat) { td.style.background = "#022033"; td.style.color = "#fff"; }
+      else if (v > 0) {
+        const a = Math.min(1, v / 50);                                       // 50%+ = full red
+        td.style.background = "rgba(238,60,54," + (0.08 + 0.85 * a).toFixed(2) + ")";
+        td.style.color = a > 0.55 ? "#fff" : "#022033";
+      } else { td.style.background = "#f3f4f5"; td.style.color = "rgba(2,32,51,.45)"; }
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+  cm.appendChild(tb);
+
+  // histogram
+  const counts = Array(11).fill(0); rows.forEach(a => counts[a.correct]++);
+  const max = Math.max(...counts, 1), hist = $("hist"), hx = $("histx"); hist.replaceChildren(); hx.replaceChildren();
+  counts.forEach((c, k) => { const b = el("div"); b.style.height = (c / max * 100) + "%"; b.title = c + " games with " + k + " correct"; if (c) b.appendChild(el("span", null, c)); hist.appendChild(b); hx.appendChild(el("span", null, k)); });
+
+  // by role
+  const byRole = {};
+  rows.forEach(a => { const r = a.role || "Not given"; (byRole[r] = byRole[r] || { n: 0, c: 0 }); byRole[r].n++; byRole[r].c += a.correct; });
+  const tbl = el("table", "board");
+  tbl.innerHTML = '<thead><tr><th>Role</th><th class="num">Games</th><th class="num">Avg correct</th></tr></thead>';
+  const rb = el("tbody");
+  Object.entries(byRole).sort((a, b) => b[1].n - a[1].n).forEach(([r, v]) => { const tr = el("tr"); tr.append(el("td", null, r), el("td", "num", v.n), el("td", "num", pct(v.c, v.n * 10) + "%")); rb.appendChild(tr); });
+  tbl.appendChild(rb); $("roles").replaceChildren(tbl);
+}
+
+/* ---------- CSV ---------- */
+function csv(rows) { return rows.map(r => r.map(v => { const s = v == null ? "" : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(",")).join("\n"); }
+function download(name, text) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + text], { type: "text/csv;charset=utf-8" }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+const stamp = () => new Date().toISOString().slice(0, 10) + ($("fSample").checked ? "-SAMPLE" : "");
+$("expR").addEventListener("click", () => {
+  const A = analyze(view);
+  const head = ["rhythm_key", "rhythm", "detail", "shown", "percent_correct", "percent_timed_out", "median_seconds_correct", "chose_asystole", "chose_pea", "chose_vf", "chose_pulseless_vt", "chose_rosc"];
+  const body = ORDERED.map(r => { const s = A.by[r.key]; return [r.key, label(r), r.detail, s.n, pct(s.correct, s.n), pct(s.timeouts, s.n), median(s.msC) == null ? "" : (median(s.msC) / 1000).toFixed(1)].concat(CAT_ORDER.map(c => pct(s.picks[c] || 0, s.n))); });
+  download("ecg-challenge-rhythms-" + stamp() + ".csv", csv([head, ...body]));
+});
+$("expRaw").addEventListener("click", () => {
+  const head = ["player_id", "date", "role", "game_score", "game_correct", "position", "rhythm_key", "rhythm", "answer", "correct", "seconds", "timed_out"];
+  const body = [];
+  view.forEach(a => (a.answers || []).forEach(x => { const r = L.byKey(x.k); body.push([a.uid, a.createdAt.toISOString(), a.role, a.score, a.correct, x.q, x.k, r ? label(r) : "", x.r ? L.catOf(x.r).label : "", x.c ? 1 : 0, (x.ms / 1000).toFixed(1), x.to ? 1 : 0]); }));
+  download("ecg-challenge-answers-" + stamp() + ".csv", csv([head, ...body]));
+});
+
+/* ---------- start-up and sign-in ---------- */
+function footer() { $("footer").replaceChildren(el("em", null, "Learn to lead when it matters most."), el("span", null, C.footer || "")); }
+function openDash(label) { $("gate").classList.add("hidden"); $("dash").classList.remove("hidden"); $("whoText").textContent = label; refresh(); }
+footer();
+ROLES.forEach(r => { const o = el("option", null, r); o.value = r; $("fRole").appendChild(o); });
+["fPeriod", "fSample"].forEach(id => $(id).addEventListener("change", refresh));
+["fRole", "fAttempts"].forEach(id => $(id).addEventListener("change", applyFilters));
+$("fSort").addEventListener("change", () => view.length && render());
+if (!Store.live) {
+  $("modeNotice").textContent = "Demo mode: showing games played on this device only. Tick \u201CShow sample data\u201D for a realistic preview.";
+  $("modeNotice").classList.remove("hidden");
+  openDash("Demo mode");
+} else {
+  $("gate").classList.remove("hidden");
+  const allowed = (C.adminEmails || []).map(e => e.toLowerCase());
+  Store.onAdminAuth(user => {
+    if (!user) { $("gate").classList.remove("hidden"); $("dash").classList.add("hidden"); return; }
+    if (!allowed.includes((user.email || "").toLowerCase())) { $("gateErr").textContent = user.email + " isn't on the list of dashboard users."; Store.adminSignOut(); return; }
+    $("signOutBtn").classList.remove("hidden"); openDash(user.email);
+  });
+  $("signInBtn").addEventListener("click", async () => {
+    $("gateErr").textContent = "";
+    try { await Store.adminSignIn(); } catch (e) { console.error(e); $("gateErr").textContent = "Sign-in didn't complete (" + (e.code || "error") + ")."; }
+  });
+  $("signOutBtn").addEventListener("click", () => Store.adminSignOut());
+}
+</script>
+</body>
+</html>

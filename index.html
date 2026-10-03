@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ECG Rhythm Challenge</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23ee3c36%27 stroke-width=%272.4%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M2 12h5l2-5 4 10 2-5h7%27/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/brand.css?v=2026-10-03g">
+<style>
+  /* ---- CPR scene ---- */
+  .scene{position:relative;background:var(--ice);border-radius:var(--radius-md);overflow:hidden;margin:0 0 12px}
+  .scene svg{display:block;width:100%;height:auto}
+  .status{position:absolute;left:12px;top:12px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:var(--radius-pill);background:var(--navy);color:var(--white)}
+  .status.check{background:var(--red)}
+  @keyframes push{0%,100%{transform:translateY(0)}45%{transform:translateY(9px)}}
+  @keyframes squash{0%,100%{transform:scaleY(1)}45%{transform:scaleY(.88)}}
+  .compressing .pusher{animation:push .545s ease-in-out infinite}
+  .compressing .chest{animation:squash .545s ease-in-out infinite}
+  .chest{transform-box:fill-box;transform-origin:50% 100%}
+  .bubble{opacity:0;transform:scale(.6);transform-box:fill-box;transform-origin:15% 100%;transition:opacity .18s,transform .22s cubic-bezier(.3,1.6,.6,1)}
+  .bubble.show{opacity:1;transform:scale(1)}
+  @media (prefers-reduced-motion:reduce){.compressing .pusher,.compressing .chest{animation:none}}
+
+  /* ---- monitor ---- */
+  .monitor{display:flex;background:var(--navy);border-radius:var(--radius-md);overflow:hidden;height:180px}
+  .ecgwrap{position:relative;flex:1;min-width:0}
+  .ecgwrap canvas{position:absolute;inset:0;width:100%;height:100%}
+  .hr{flex:0 0 96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-left:1px solid rgba(132,209,245,.35);color:#fff}
+  .hr-label{font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--sky)}
+  .hr-val{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;font-variant-numeric:tabular-nums;min-height:40px}
+  .hr-unit{font-size:12px;color:rgba(255,255,255,.65)}
+  @media (max-width:520px){.hr{flex-basis:70px}.hr-val{font-size:30px;min-height:30px}}
+
+  /* ---- answer timer + choices ---- */
+  .answer-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0 8px}
+  .prompt{font-family:var(--display);font-weight:700;font-size:20px}
+  .prompt.wait{color:var(--ink-muted)}
+  .clock{font-family:var(--display);font-weight:800;font-size:24px;font-variant-numeric:tabular-nums;color:var(--navy);min-width:52px;text-align:right}
+  .clock.late{color:var(--red)}
+  .tbar{height:8px;background:var(--mist);border-radius:var(--radius-pill);overflow:hidden;margin:0 0 14px}
+  .tbar i{display:block;height:100%;width:100%;background:var(--navy);transform-origin:left;transform:scaleX(1)}
+  .tbar.late i{background:var(--red)}
+  .choices{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  @media (max-width:640px){.choices{grid-template-columns:1fr 1fr}.choices .opt:last-child{grid-column:1/3}}
+  .choices .opt{flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2px;min-height:76px;padding:10px 8px;font-family:var(--display);font-size:19px;font-weight:800}
+  .choices .opt small{font-family:var(--body);font-size:13px;font-weight:600;color:var(--ink-muted)}
+  .choices .opt .key{position:absolute;top:6px;left:8px;font-family:var(--body);font-size:11px;font-weight:700;color:var(--ink-muted)}
+  .choices .opt{position:relative;line-height:1.15}
+  .choices.waiting .opt{opacity:.45}
+  .choices .opt .tag{position:static;margin:4px 0 0}
+  .rname{font-family:var(--display);font-weight:800;font-size:22px;margin:0 0 4px}
+  .rdetail{color:var(--ink-muted);margin:0 0 10px}
+  .chip{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:var(--radius-pill);margin-left:8px;vertical-align:4px}
+  .chip.shock{background:var(--red);color:#fff}.chip.noshock{background:var(--mist);color:var(--navy)}
+  .algo{margin:4px 0 14px;border:1px solid var(--mist);border-radius:var(--radius-md);padding:12px 14px 14px}
+  .algo-title{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);margin:0 0 8px}
+  .algo-chart svg{display:block;width:100%;height:auto}
+  .algo-steps{display:none;margin:0;padding:0;list-style:none;counter-reset:step}
+  .algo-steps li{counter-increment:step;display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--mist);font-size:16px}
+  .algo-steps li::before{content:counter(step);flex:0 0 24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;font-weight:700;display:grid;place-items:center}
+  .algo-steps li span{flex:1}
+  .algo-steps li b{background:var(--red);color:#fff;font-size:13px;padding:2px 10px;border-radius:var(--radius-pill)}
+  .algo-steps li.final{font-family:var(--display);font-weight:800;color:var(--red);border-bottom:0}
+  .algo-steps li.final::before{background:var(--red)}
+  @media (max-width:560px){.algo-chart{display:none}.algo-steps{display:block}}
+</style>
+<script>
+  // Tell the shared data layer which game this is (separate leaderboards and analytics)
+  window.GAME = { boards: "rhythm_boards", attempts: "rhythm_attempts", prefix: "rhythm", source: "web", v: 1 };
+</script>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ START ============ -->
+  <section id="screen-start" class="sheet">
+    <div class="strip" aria-hidden="true"><canvas id="heroStrip"></canvas></div>
+    <img class="logo-lg" src="assets/recover-logo.webp" alt="RECOVER">
+    <p class="eyebrow">RECOVER CPR guidelines</p>
+    <h1>ECG Rhythm Challenge</h1>
+    <p class="muted">Ten arrest rhythms in random order. Watch the compressions, wait for the pulse check, then name the rhythm as fast as you can.</p>
+    <div class="rules-grid">
+      <div><b>Up to 1,000 points</b><span>per correct answer, more the faster you are</span></div>
+      <div><b>10 seconds</b><span>per rhythm after the pulse check</span></div>
+      <div><b>Your best score counts</b><span>play as often as you like; boards reset monthly</span></div>
+    </div>
+    <div id="modeNotice" class="notice hidden"></div>
+    <div class="name-row">
+      <label class="field"><span>First name</span><input type="text" id="first" maxlength="20" autocomplete="given-name"></label>
+      <label class="field"><span>Last name</span><input type="text" id="last" maxlength="30" autocomplete="family-name"></label>
+    </div>
+    <p class="field-note">The public leaderboard shows your first name and last initial only.</p>
+    <label class="field"><span>Your role</span>
+      <select id="role">
+        <option value="">Choose one</option>
+        <option>Veterinarian</option>
+        <option>Specialist / resident</option>
+        <option>Veterinary technician / nurse</option>
+        <option>Student</option>
+        <option>Other</option>
+      </select>
+    </label>
+    <p id="joinErr" class="small" style="color:var(--red-deep)"></p>
+    <div class="row">
+      <button class="btn" id="startBtn">Start the challenge</button>
+      <a class="btn ghost" href="leaderboard.html" style="text-decoration:none">See the leaderboard</a>
+    </div>
+  </section>
+
+  <!-- ============ ROUND ============ -->
+  <section id="screen-q" class="sheet hidden">
+    <div class="qhead"><p class="eyebrow">Rhythm <span id="qNum">1</span> of <span id="qTot">10</span></p><span class="running">Score <b id="runScore">0</b></span></div>
+    <div class="progress"><i id="progBar"></i></div>
+
+    <div class="scene" id="scene">
+      <span class="status" id="status">Chest compressions</span>
+      <svg viewBox="0 0 640 240" role="img" aria-labelledby="sceneTitle">
+        <title id="sceneTitle">One rescuer doing chest compressions on a dog in lateral recumbency while a second rescuer feels the femoral pulse</title>
+        <!-- floor -->
+        <rect x="0" y="228" width="640" height="12" fill="#c4eef9"/>
+        <!-- compressor: body (behind the dog) -->
+        <g class="pusher">
+          <circle cx="332" cy="44" r="18" fill="#022033"/>
+          <rect x="306" y="66" width="52" height="110" rx="16" fill="#84d1f5"/>
+        </g>
+        <!-- pulse checker: body (behind the dog) -->
+        <circle cx="468" cy="58" r="18" fill="#022033"/>
+        <rect x="442" y="80" width="52" height="108" rx="16" fill="#022033"/>
+        <!-- table -->
+        <rect x="104" y="196" width="432" height="14" rx="4" fill="#022033"/>
+        <rect x="136" y="210" width="12" height="20" fill="#022033"/>
+        <rect x="492" y="210" width="12" height="20" fill="#022033"/>
+        <g transform="translate(340 196) scale(0.67) translate(-340 -196)">
+        <!-- dog in lateral recumbency (lying flat on its side): the whole silhouette rests on the table;
+             the legs are a slightly darker shade so they read against the body -->
+        <g fill="#9fb1bd">
+          <path d="M434 172 C 460 178, 488 188, 516 191 C 520 192, 520 196, 514 196 L 434 196 Z"/>                       <!-- tail, lying on the table -->
+          <path d="M378 196 C 378 166, 396 148, 412 148 C 432 148, 444 168, 442 196 Z"/>                                  <!-- hind thigh -->
+          <path class="chest" d="M258 168 C 258 148, 282 140, 322 141 C 366 142, 402 145, 420 154 C 438 164, 442 182, 438 196 L 262 196 C 258 188, 258 178, 258 168 Z"/>  <!-- body -->
+          <path d="M266 154 C 252 145, 238 143, 225 144 C 211 145, 203 152, 200 158 L 182 164 C 171 167, 166 178, 168 186 C 170 192, 174 196, 182 196 L 268 196 Z"/>  <!-- head and neck, chin on the table -->
+          <path d="M222 149 C 232 141, 243 138, 248 140 C 246 148, 243 155, 238 160 Z"/>                                 <!-- ear -->
+        </g>
+        <g fill="#6b8292">
+          <path d="M276 176 L 166 187 L 157 192 L 162 196 L 280 189 Z"/>        <!-- front legs, extended forward -->
+          <path d="M292 184 L 190 191 L 182 196 L 296 196 Z"/>
+          <path d="M404 178 L 508 187 L 518 192 L 512 196 L 400 189 Z"/>        <!-- hind legs, extended back -->
+          <path d="M418 186 L 520 191 L 528 196 L 414 196 Z"/>
+        </g>
+        </g>
+        <!-- compressor: arms and hands on the chest (in front of the dog) -->
+        <g class="pusher" stroke="#022033" stroke-width="10" stroke-linecap="round" fill="none">
+          <path d="M319 82 L 327 154"/><path d="M341 82 L 337 154"/>
+          <rect x="319" y="152" width="26" height="12" rx="6" fill="#022033" stroke="none"/>
+        </g>
+        <!-- pulse checker: arm to the femoral artery (inner thigh) -->
+        <g stroke="#022033" stroke-width="10" stroke-linecap="round" fill="none">
+          <path d="M450 98 L 390 182"/>
+          <circle cx="388" cy="186" r="8" fill="#022033" stroke="none"/>
+        </g>
+        <!-- speech bubble -->
+        <g class="bubble" id="bubble">
+          <path d="M488 8 h 136 a 12 12 0 0 1 12 12 v 26 a 12 12 0 0 1 -12 12 h -112 l -18 16 l 2 -16 h -8 a 12 12 0 0 1 -12 -12 v -26 a 12 12 0 0 1 12 -12 z" fill="#ffffff" stroke="#022033" stroke-width="3"/>
+          <text id="bubbleText" x="557" y="39" text-anchor="middle" font-family="Outfit, Arial, sans-serif" font-weight="700" font-size="15" fill="#022033">I don't feel a pulse</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="monitor">
+      <div class="ecgwrap"><canvas id="ecg" aria-label="ECG monitor"></canvas></div>
+      <div class="hr" aria-live="off"><span class="hr-label">HR</span><span class="hr-val" id="hrVal">---</span><span class="hr-unit">bpm</span></div>
+    </div>
+
+    <div class="answer-head">
+      <span class="prompt wait" id="prompt">Compressions in progress…</span>
+      <span class="clock" id="clock">10</span>
+    </div>
+    <div class="tbar" id="tbar"><i id="tfill"></i></div>
+    <div class="choices" id="choices"></div>
+
+    <div id="reveal" class="hidden">
+      <div class="verdict" id="verdict"><b id="verdictText"></b><span class="pts" id="verdictPts"></span></div>
+      <p class="rname" id="rname"></p>
+      <p class="rdetail" id="rdetail"></p>
+      <div id="ralgo"></div>
+      <p class="takeaway" id="rteach"></p>
+      <div class="next-row">
+        <span class="running">Total <b id="runScore2">0</b></span>
+        <button class="btn" id="nextBtn">Next rhythm</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="screen-end" class="sheet hidden">
+    <img class="logo-md" src="assets/recover-logo.webp" alt="RECOVER">
+    <span id="pbBadge" class="pb hidden">New personal best</span>
+    <h2>Challenge complete</h2>
+    <div class="bigscore" id="finalScore">0</div>
+    <p class="muted">points</p>
+    <div class="stats">
+      <div><b id="statCorrect">0/10</b>correct</div>
+      <div><b id="statRank">–</b>rank this month</div>
+      <div><b id="statBest">–</b>your best this month</div>
+    </div>
+    <p id="postStatus" class="small muted"></p>
+    <div class="row" style="margin-bottom:26px"><button class="btn" id="againBtn">Play again</button></div>
+    <div class="split">
+      <div>
+        <div class="board-head">
+          <h3>Leaderboard</h3>
+          <a class="linkish small" href="leaderboard.html" target="_blank" rel="noopener">Open the public leaderboard</a>
+        </div>
+        <div class="tabs" role="tablist" id="endTabs">
+          <button role="tab" aria-selected="true" data-period="month">This month</button>
+          <button role="tab" aria-selected="false" data-period="all">All time</button>
+        </div>
+        <div class="board-wrap" id="boardEnd"></div>
+      </div>
+      <div>
+        <h3>Review your answers</h3>
+        <div class="review" id="review"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/config.js?v=2026-10-03g"></script>
+<script src="js/store.js?v=2026-10-03g"></script>
+<script src="js/strip.js?v=2026-10-03g"></script>
+<script src="js/rhythms.js?v=2026-10-03g"></script>
+<script src="js/monitor.js?v=2026-10-03g"></script>
+<script src="js/algorithm.js?v=2026-10-03g"></script>
+<script>
+const CONFIG = window.APP_CONFIG, L = window.RHYTHM_LIB, $ = id => document.getElementById(id);
+const COMPRESS_S = 3, ANSWER_S = 10, MAX_PTS = 1000, MIN_PTS = 100;
+const HR_LAG_S = 1.0;      // monitors need a few beats before they display a rate
+const N = L.RHYTHMS.length;
+
+const state = { order: [], i: 0, score: 0, results: [], name: "", role: "", phase: "idle", t0: 0, answerT0: 0, raf: null, variant: null, myUid: null, month: null };
+let mon = null;
+
+function show(name) { ["start", "q", "end"].forEach(s => $("screen-" + s).classList.toggle("hidden", s !== name)); window.scrollTo(0, 0); }
+function footer() {
+  const em = document.createElement("em"); em.textContent = "Learn to lead when it matters most.";
+  const s = document.createElement("span"); s.textContent = CONFIG.footer || "";
+  $("footer").replaceChildren(em, s);
+}
+function displayName(first, last) {
+  const f = first.trim().replace(/\s+/g, " ");
+  const l = last.trim().replace(/^[^A-Za-z\u00C0-\u024F]+/, "");
+  return (f.charAt(0).toUpperCase() + f.slice(1)) + " " + l.charAt(0).toUpperCase() + ".";
+}
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ---------------- start ---------------- */
+function init() {
+  footer();
+  $("qTot").textContent = N;
+  const saved = Store.LS.get("cprchal:player", {});        // shared with the misconceptions game
+  $("first").value = saved.first || ""; $("last").value = saved.last || ""; $("role").value = saved.role || "";
+  if (!Store.live) { $("modeNotice").textContent = "Demo mode: scores and results are saved only on this device until the shared database is connected."; $("modeNotice").classList.remove("hidden"); }
+  buildChoices();
+  Strip.hero($("heroStrip"));
+}
+
+function start() {
+  const first = $("first").value.trim(), last = $("last").value.trim(), role = $("role").value;
+  if (!first) { $("joinErr").textContent = "Enter your first name."; $("first").focus(); return; }
+  if (!/[A-Za-z\u00C0-\u024F]/.test(last)) { $("joinErr").textContent = "Enter your last name. Only the initial is shown."; $("last").focus(); return; }
+  if (!role) { $("joinErr").textContent = "Choose your role."; $("role").focus(); return; }
+  $("joinErr").textContent = "";
+  Store.LS.set("cprchal:player", { first, last, role });
+  Object.assign(state, { order: shuffle(L.RHYTHMS), i: 0, score: 0, results: [], name: displayName(first, last).slice(0, 30), role });
+  show("q");
+  sizeMonitor();
+  startRound();
+}
+
+/* ---------------- choices ---------------- */
+function buildChoices() {
+  const box = $("choices"); box.replaceChildren();
+  L.CATS.forEach((c, idx) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "opt"; b.dataset.cat = c.key; b.disabled = true;
+    const k = document.createElement("span"); k.className = "key"; k.textContent = idx + 1;
+    const t = document.createElement("span"); t.textContent = c.short || c.label;
+    b.append(k, t);
+    if (c.sub) { const s = document.createElement("small"); s.textContent = c.sub; b.appendChild(s); }
+    if (c.short) b.title = c.label;
+    b.addEventListener("click", () => answer(c.key));
+    box.appendChild(b);
+  });
+}
+function resetChoices(enabled) {
+  $("choices").classList.toggle("waiting", !enabled);
+  [...$("choices").children].forEach(b => { b.disabled = !enabled; b.classList.remove("is-correct", "is-wrong"); b.querySelectorAll(".tag").forEach(t => t.remove()); });
+}
+
+/* ---------------- round flow ---------------- */
+function startRound() {
+  const r = state.order[state.i];
+  state.phase = "compress";
+  state.variant = L.variant(Math.random() * 100);
+  state.artSeed = Math.random() * 100;
+  $("qNum").textContent = state.i + 1;
+  $("progBar").style.width = (state.i / N * 100) + "%";
+  $("runScore").textContent = state.score.toLocaleString();
+  $("reveal").classList.add("hidden");
+  $("scene").querySelector("svg").classList.add("compressing");
+  $("bubble").classList.remove("show");
+  $("bubbleText").textContent = r.cat === "rosc" ? "I feel a pulse!" : "I don't feel a pulse";
+  $("status").textContent = "Chest compressions"; $("status").className = "status";
+  $("prompt").textContent = "Compressions in progress\u2026"; $("prompt").classList.add("wait");
+  $("clock").textContent = ANSWER_S; $("clock").classList.remove("late");
+  $("tbar").classList.remove("late"); $("tfill").style.transform = "scaleX(1)";
+  resetChoices(false);
+  state.hrNext = 0; $("hrVal").textContent = "---";
+  state.t0 = performance.now();
+  cancelAnimationFrame(state.raf);
+  state.raf = requestAnimationFrame(loop);
+}
+
+function signal(t) {
+  const r = state.order[state.i];
+  if (t < COMPRESS_S) return L.compressionArtifact(t, state.artSeed);
+  const x = t - COMPRESS_S, v = r.fn(x, state.variant);
+  if (x < 0.15) { const a = L.compressionArtifact(t, state.artSeed) * (1 - x / 0.15) * 0.4; return v + a; }   // brief settle as compressions stop
+  return v;
+}
+
+function loop(now) {
+  const T = (now - state.t0) / 1000;
+  Monitor.sweep(mon, signal, T);
+  updateHR(T);
+  if (state.phase === "compress" && T >= COMPRESS_S) beginAnswer(now);
+  if (state.phase === "answer") {
+    const left = Math.max(0, ANSWER_S - (now - state.answerT0) / 1000);
+    $("clock").textContent = Math.ceil(left);
+    const late = left <= 3; $("clock").classList.toggle("late", late); $("tbar").classList.toggle("late", late);
+    $("tfill").style.transform = "scaleX(" + (left / ANSWER_S) + ")";
+    if (left <= 0) answer(null);
+  }
+  if (state.phase !== "done") state.raf = requestAnimationFrame(loop);
+}
+
+function updateHR(T) {
+  const r = state.order[state.i], mode = L.hrMode(r);
+  if (T < COMPRESS_S + HR_LAG_S || mode === "none") { $("hrVal").textContent = "---"; return; }
+  if (mode === "zero") { $("hrVal").textContent = "0"; return; }
+  if (T < state.hrNext) return;
+  if (mode === "wild") {
+    $("hrVal").textContent = Math.round(70 + Math.random() * 280);           // 70-350, changing erratically
+    state.hrNext = T + 0.35 + Math.random() * 0.6;
+  } else {
+    const drift = r.rate < 60 ? 1 : 2;
+    $("hrVal").textContent = r.rate + Math.round((Math.random() * 2 - 1) * drift);
+    state.hrNext = T + 1.5 + Math.random();
+  }
+}
+
+function beginAnswer(now) {
+  state.phase = "answer"; state.answerT0 = now;
+  $("scene").querySelector("svg").classList.remove("compressing");
+  $("bubble").classList.add("show");
+  $("status").textContent = "Pulse check"; $("status").className = "status check";
+  $("prompt").textContent = "Name the rhythm"; $("prompt").classList.remove("wait");
+  resetChoices(true);
+}
+
+function answer(catKey) {
+  if (state.phase !== "answer") return;
+  state.phase = "reveal";
+  const r = state.order[state.i];
+  const elapsed = Math.min(ANSWER_S, (performance.now() - state.answerT0) / 1000);
+  const timedOut = catKey === null, correct = !timedOut && catKey === r.cat;
+  const pts = correct ? Math.round(MAX_PTS - (MAX_PTS - MIN_PTS) * elapsed / ANSWER_S) : 0;
+  state.score += pts;
+  state.results.push({ r, chosen: catKey, correct, pts, elapsed, timedOut });
+
+  [...$("choices").children].forEach(b => {
+    b.disabled = true;
+    if (b.dataset.cat === r.cat) { b.classList.add("is-correct"); addTag(b, "Correct"); }
+    else if (b.dataset.cat === catKey) { b.classList.add("is-wrong"); addTag(b, "Your pick"); }
+  });
+  $("verdict").className = "verdict " + (correct ? "good" : "bad");
+  $("verdictText").textContent = correct ? "Correct" : (timedOut ? "Time's up: no points" : "Not quite");
+  $("verdictPts").textContent = "+" + pts.toLocaleString();
+  const cat = L.catOf(r.cat);
+  $("rname").replaceChildren(document.createTextNode(cat.label));
+  const chip = document.createElement("span"); chip.className = "chip " + (cat.shockable ? "shock" : "noshock"); chip.textContent = cat.shockable ? "Shockable" : (r.cat === "rosc" ? "Perfusing rhythm" : "Non-shockable");
+  $("rname").appendChild(chip);
+  $("rdetail").textContent = r.detail;
+  $("rteach").textContent = r.teach;
+  $("ralgo").replaceChildren(Algorithm.render(r.cat, catKey));
+  $("runScore").textContent = $("runScore2").textContent = state.score.toLocaleString();
+  $("prompt").textContent = correct ? "Nice work" : "Here's the answer";
+  $("clock").textContent = timedOut ? "0" : elapsed.toFixed(1) + " s"; $("clock").classList.remove("late");
+  $("nextBtn").textContent = state.i === N - 1 ? "See my results" : "Next rhythm";
+  $("reveal").classList.remove("hidden");
+  $("nextBtn").focus({ preventScroll: true });
+  $("reveal").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+}
+function addTag(b, text) { const s = document.createElement("span"); s.className = "tag"; s.textContent = text; b.appendChild(s); }
+
+function next() {
+  if (state.i < N - 1) { state.i++; window.scrollTo(0, 0); startRound(); }
+  else finish();
+}
+
+/* ---------------- results ---------------- */
+async function finish() {
+  state.phase = "done"; cancelAnimationFrame(state.raf);
+  show("end");
+  const nCorrect = state.results.filter(x => x.correct).length;
+  const totalMs = Math.round(state.results.reduce((s, x) => s + x.elapsed, 0) * 1000);
+  $("finalScore").textContent = state.score.toLocaleString();
+  $("statCorrect").textContent = nCorrect + "/" + N;
+  $("statRank").textContent = "–"; $("statBest").textContent = "–";
+  $("pbBadge").classList.add("hidden");
+  renderReview();
+  const answers = state.results.map((x, i) => ({ q: i + 1, k: x.r.key, r: x.chosen || "", c: x.correct, ms: Math.round(x.elapsed * 1000), to: x.timedOut }));
+  try {
+    $("postStatus").textContent = "Saving your results\u2026";
+    const out = await Store.submit({ name: state.name, role: state.role, score: state.score, correct: nCorrect, total: N, timeMs: totalMs, answers });
+    state.myUid = out.uid; state.month = out.month;
+    const m = out.bests[out.month];
+    $("statBest").textContent = m.best.score.toLocaleString();
+    if (m.improved && m.hadPrevious) $("pbBadge").classList.remove("hidden");
+    $("postStatus").textContent = m.improved
+      ? (Store.live ? "Your score is on the leaderboard as " + state.name + "." : "Demo mode: your score is saved on this device only.")
+      : "Your best score this month is still on the board. Play again to beat it.";
+    const rank = await Store.rankIn(out.month, m.best.score);
+    $("statRank").textContent = rank ? "#" + rank : "–";
+  } catch (e) {
+    console.error(e);
+    $("postStatus").textContent = "Your results couldn't be saved. Check your connection and play again to post a score.";
+  }
+  loadBoard(document.querySelector('#endTabs [aria-selected="true"]').dataset.period);
+}
+
+function renderReview() {
+  const box = $("review"); box.replaceChildren();
+  state.results.forEach((x, i) => {
+    const d = document.createElement("details"), s = document.createElement("summary");
+    const m = document.createElement("span"); m.className = "mark " + (x.correct ? "ok" : "no"); m.textContent = x.correct ? "✓" : "✗";
+    const t = document.createElement("span"); t.textContent = (i + 1) + ". " + L.catOf(x.r.cat).label + ": " + x.r.detail.charAt(0).toLowerCase() + x.r.detail.slice(1);
+    s.append(m, t); d.appendChild(s);
+    const b = document.createElement("div"); b.className = "body";
+    const p1 = document.createElement("p"); const bb = document.createElement("b"); bb.textContent = "Your answer: ";
+    p1.append(bb, document.createTextNode(x.timedOut ? "no answer (timed out)" : L.catOf(x.chosen).label + " (" + x.elapsed.toFixed(1) + " s)"));
+    const p2 = document.createElement("p"); p2.textContent = x.r.teach;
+    b.append(p1, p2); d.appendChild(b); box.appendChild(d);
+  });
+}
+
+async function loadBoard(which) {
+  const el = $("boardEnd"); el.innerHTML = '<p class="empty">Loading…</p>';
+  const period = which === "all" ? "all" : (state.month || Store.periodKey());
+  try {
+    const rows = await Store.getBoard(period);
+    if (!rows.length) { el.innerHTML = '<p class="empty">No scores yet. Be the first on the board.</p>'; return; }
+    const tbl = document.createElement("table"); tbl.className = "board";
+    tbl.innerHTML = '<thead><tr><th>#</th><th>Name</th><th class="num">Correct</th><th class="num">Points</th></tr></thead>';
+    const tb = document.createElement("tbody");
+    rows.forEach((r, i) => {
+      const tr = document.createElement("tr"); if (state.myUid && r.id === state.myUid) tr.className = "me";
+      const c0 = document.createElement("td"); c0.className = "rank"; c0.textContent = i + 1;
+      const c1 = document.createElement("td"); const n = document.createElement("div"); n.textContent = r.name || "Anonymous";
+      const ro = document.createElement("div"); ro.className = "role"; ro.textContent = r.role || ""; c1.append(n, ro);
+      const c2 = document.createElement("td"); c2.className = "num"; c2.textContent = r.correct + "/" + r.total;
+      const c3 = document.createElement("td"); c3.className = "num"; c3.textContent = (r.score || 0).toLocaleString();
+      tr.append(c0, c1, c2, c3); tb.appendChild(tr);
+    });
+    tbl.appendChild(tb); el.replaceChildren(tbl);
+  } catch (e) { console.error(e); el.innerHTML = '<p class="empty">The leaderboard couldn\u2019t load. Check your connection and try again.</p>'; }
+}
+
+/* ---------------- monitor sizing ---------------- */
+function sizeMonitor() {
+  const box = document.querySelector(".monitor");
+  const w = document.querySelector(".ecgwrap").getBoundingClientRect().width;
+  box.style.height = Math.round(Math.min(200, Math.max(130, w / 25 * 7))) + "px";
+  mon = Monitor.setup($("ecg"));
+}
+
+/* ---------------- wiring ---------------- */
+$("startBtn").addEventListener("click", start);
+["first", "last"].forEach(id => $(id).addEventListener("keydown", e => { if (e.key === "Enter") start(); }));
+$("nextBtn").addEventListener("click", next);
+$("againBtn").addEventListener("click", () => { show("start"); Strip.hero($("heroStrip")); });
+document.addEventListener("keydown", e => {
+  if (state.phase === "answer" && /^[1-5]$/.test(e.key)) answer(L.CATS[+e.key - 1].key);
+});
+document.querySelectorAll("#endTabs button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("#endTabs button").forEach(x => x.setAttribute("aria-selected", x === b ? "true" : "false"));
+  loadBoard(b.dataset.period);
+}));
+let rsz; addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => {
+  if (!$("screen-q").classList.contains("hidden")) sizeMonitor();
+  if (!$("screen-start").classList.contains("hidden")) Strip.hero($("heroStrip"));
+}, 150); });
+init();
+</script>
+</body>
+</html>
