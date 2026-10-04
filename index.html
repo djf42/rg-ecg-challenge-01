@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/brand.css?v=2026-10-04c">
+<link rel="stylesheet" href="css/brand.css?v=2026-10-04e">
 <style>
   /* ---- CPR scene ---- */
   .scene{position:relative;background:var(--ice);border-radius:var(--radius-md);overflow:hidden;margin:0 0 12px}
@@ -70,7 +70,15 @@
   .az-close{appearance:none;border:0;background:rgba(255,255,255,.12);color:#fff;font-size:28px;line-height:1;width:44px;height:44px;border-radius:50%;cursor:pointer}
   .az-stage{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;display:flex;cursor:grab}
   .az-stage.dragging{cursor:grabbing}
-  .az-inner{width:100%;margin:auto;background:#fff;border-radius:var(--radius-md);padding:12px;flex:none}
+  .az-inner{margin:auto;background:#fff;border-radius:var(--radius-md);padding:12px;flex:none}
+  /* landscape phones: slimmer title bar, zoom buttons float over the chart's corner */
+  @media (max-height:500px){
+    .az-bar{padding:4px 8px 4px 16px}
+    .az-close{width:38px;height:38px;font-size:24px}
+    .algo-zoom{position:fixed}
+    .az-tools{position:absolute;right:calc(12px + env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);flex-direction:column;padding:0;gap:8px}
+    .az-tools button{min-width:46px;height:40px;font-size:18px;box-shadow:0 2px 8px rgba(2,32,51,.35)}
+  }
   .az-inner svg{display:block;width:100%;height:auto}
   .az-tools{display:flex;justify-content:center;gap:10px;padding:12px}
   .az-tools button{appearance:none;border:0;background:#fff;color:var(--navy);font-family:var(--display);font-weight:800;font-size:20px;min-width:56px;height:44px;border-radius:var(--radius-pill);cursor:pointer}
@@ -268,12 +276,12 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="js/config.js?v=2026-10-04c"></script>
-<script src="js/store.js?v=2026-10-04c"></script>
-<script src="js/strip.js?v=2026-10-04c"></script>
-<script src="js/rhythms.js?v=2026-10-04c"></script>
-<script src="js/monitor.js?v=2026-10-04c"></script>
-<script src="js/algorithm.js?v=2026-10-04c"></script>
+<script src="js/config.js?v=2026-10-04e"></script>
+<script src="js/store.js?v=2026-10-04e"></script>
+<script src="js/strip.js?v=2026-10-04e"></script>
+<script src="js/rhythms.js?v=2026-10-04e"></script>
+<script src="js/monitor.js?v=2026-10-04e"></script>
+<script src="js/algorithm.js?v=2026-10-04e"></script>
 <script>
 const CONFIG = window.APP_CONFIG, L = window.RHYTHM_LIB, $ = id => document.getElementById(id);
 const COMPRESS_S = 3, ANSWER_S = 10, MAX_PTS = 1000, MIN_PTS = 100;

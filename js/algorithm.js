@@ -157,26 +157,38 @@ window.Algorithm = (function () {
       stage.addEventListener("mousedown", e => { drag = { x: e.clientX, y: e.clientY, l: stage.scrollLeft, t: stage.scrollTop }; stage.classList.add("dragging"); });
       window.addEventListener("mousemove", e => { if (drag) { stage.scrollLeft = drag.l - (e.clientX - drag.x); stage.scrollTop = drag.t - (e.clientY - drag.y); } });
       window.addEventListener("mouseup", () => { drag = null; stage && stage.classList.remove("dragging"); });
+      // re-fit after rotating the phone or resizing the window, keeping the current zoom level
+      const refit = () => { if (el.classList.contains("open")) requestAnimationFrame(() => setZoom(zoom)); };
+      window.addEventListener("resize", refit);
+      window.addEventListener("orientationchange", () => setTimeout(refit, 250));
       // double-tap / double-click toggles between fit and 2.5x
       stage.addEventListener("dblclick", e => setZoom(zoom > 1.2 ? 1 : 2.5, e.clientX, e.clientY));
+    }
+    // "Fit" = the largest size that fits BOTH the width and the height of the viewer,
+    // so it works in portrait and landscape. Zoom levels are multiples of that size.
+    const ASPECT = 404 / 640, PAD = 24;                     // chart height/width, and the white margin (px)
+    function fitWidth() {
+      const w = stage.clientWidth - 16, h = stage.clientHeight - 16;
+      return Math.max(200, Math.min(w, (h - PAD) / ASPECT + PAD));
     }
     function setZoom(z, px, py) {
       z = Math.max(MIN, Math.min(MAX, z));
       const r = stage.getBoundingClientRect();
       px = px == null ? r.left + r.width / 2 : px; py = py == null ? r.top + r.height / 2 : py;
       // keep the content under (px, py) in place while zooming
-      const fx = (stage.scrollLeft + px - r.left) / inner.offsetWidth, fy = (stage.scrollTop + py - r.top) / inner.offsetHeight;
+      const fx = (stage.scrollLeft + px - r.left - inner.offsetLeft) / inner.offsetWidth;
+      const fy = (stage.scrollTop + py - r.top - inner.offsetTop) / inner.offsetHeight;
       zoom = z;
-      inner.style.width = (100 * zoom) + "%";
-      stage.scrollLeft = fx * inner.offsetWidth - (px - r.left);
-      stage.scrollTop = fy * inner.offsetHeight - (py - r.top);
+      inner.style.width = Math.round(fitWidth() * zoom) + "px";
+      stage.scrollLeft = fx * inner.offsetWidth + inner.offsetLeft - (px - r.left);
+      stage.scrollTop = fy * inner.offsetHeight + inner.offsetTop - (py - r.top);
     }
     function open(markup) {
       if (!el) build();
       inner.innerHTML = markup;
       lastFocus = document.activeElement;
       el.classList.add("open"); document.documentElement.classList.add("az-lock");
-      zoom = 1; inner.style.width = "100%"; stage.scrollLeft = 0; stage.scrollTop = 0;
+      zoom = 1; inner.style.width = Math.round(fitWidth()) + "px"; stage.scrollLeft = 0; stage.scrollTop = 0;
       el.querySelector(".az-close").focus();
     }
     function close() {

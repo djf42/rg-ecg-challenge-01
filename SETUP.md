@@ -87,7 +87,7 @@ Everything is in `js/rhythms.js`. For each rhythm:
 - `teach` is the explanation paragraph.
 - The rate is set in the `fn:` line (e.g. `regular(60 / 38, ...)` for 38/min).
 
-After editing, change the version tag `?v=2026-10-04c` in the four HTML pages (any new value, e.g. `?v=2026-10-20`) so browsers load the new file rather than a saved copy. Check the result on `gallery.html`.
+After editing, change the version tag `?v=2026-10-04e` in the four HTML pages (any new value, e.g. `?v=2026-10-20`) so browsers load the new file rather than a saved copy. Check the result on `gallery.html`.
 
 ## Using the dashboard
 
