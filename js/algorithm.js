@@ -1,7 +1,6 @@
 /* RECOVER CPR ECG Algorithm (2024), redrawn so the path to any diagnosis can be highlighted.
-   Algorithm.render(correctCat, chosenCat) returns an element containing:
-   - a full flowchart (wider screens), correct path in red, learner's wrong pick outlined
-   - a step-by-step list of the same path (narrow screens) */
+   Algorithm.render(correctCat, chosenCat) returns the flowchart (correct path in red, learner's wrong pick
+   outlined); tapping it opens a full-screen viewer with pinch / +/- zoom and panning. */
 window.Algorithm = (function () {
   // nodes: x, y = center; w, h = size
   const N = {
@@ -98,10 +97,94 @@ window.Algorithm = (function () {
   function render(correct, chosen) {
     const wrap = document.createElement("div"); wrap.className = "algo";
     const h = document.createElement("p"); h.className = "algo-title"; h.textContent = "RECOVER CPR ECG Algorithm";
-    const chart = document.createElement("div"); chart.className = "algo-chart"; chart.innerHTML = svg(correct, chosen);
-    wrap.append(h, chart, steps(correct));
+    const chart = document.createElement("div"); chart.className = "algo-chart";
+    chart.setAttribute("role", "button"); chart.tabIndex = 0;
+    chart.setAttribute("aria-label", "Enlarge the RECOVER CPR ECG Algorithm");
+    const markup = svg(correct, chosen);
+    chart.innerHTML = markup;
+    const hint = document.createElement("p"); hint.className = "algo-hint";
+    hint.textContent = (matchMedia("(hover: none)").matches ? "Tap" : "Click") + " the algorithm to enlarge it";
+    const open = () => Zoom.open(markup);
+    chart.addEventListener("click", open);
+    chart.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+    wrap.append(h, chart, hint);
     return wrap;
   }
+
+  // ---- full-screen viewer: pinch or +/- to zoom, drag to pan ----
+  const Zoom = (function () {
+    let el, stage, inner, zoom = 1, lastFocus = null;
+    const MIN = 1, MAX = 4;
+    function build() {
+      el = document.createElement("div"); el.className = "algo-zoom"; el.setAttribute("role", "dialog");
+      el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "RECOVER CPR ECG Algorithm, enlarged");
+      el.innerHTML = '<div class="az-bar"><span class="az-title">RECOVER CPR ECG Algorithm</span>' +
+        '<button type="button" class="az-close" aria-label="Close">\u00D7</button></div>' +
+        '<div class="az-stage"><div class="az-inner"></div></div>' +
+        '<div class="az-tools"><button type="button" data-z="-" aria-label="Zoom out">\u2212</button>' +
+        '<button type="button" data-z="fit">Fit</button><button type="button" data-z="+" aria-label="Zoom in">+</button></div>';
+      document.body.appendChild(el);
+      stage = el.querySelector(".az-stage"); inner = el.querySelector(".az-inner");
+      el.querySelector(".az-close").addEventListener("click", close);
+      el.querySelectorAll(".az-tools button").forEach(b => b.addEventListener("click", () => {
+        const z = b.dataset.z; setZoom(z === "fit" ? 1 : zoom * (z === "+" ? 1.4 : 1 / 1.4));
+      }));
+      document.addEventListener("keydown", e => {
+        if (!el.classList.contains("open")) return;
+        if (e.key === "Escape") close();
+        if (e.key === "+" || e.key === "=") setZoom(zoom * 1.4);
+        if (e.key === "-") setZoom(zoom / 1.4);
+      });
+      // pinch to zoom (two fingers), keeping the point between the fingers in place
+      let pinch = null;
+      stage.addEventListener("touchstart", e => {
+        if (e.touches.length === 2) {
+          const [a, b] = e.touches;
+          pinch = { d: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), z: zoom,
+                    cx: (a.clientX + b.clientX) / 2, cy: (a.clientY + b.clientY) / 2 };
+        }
+      }, { passive: true });
+      stage.addEventListener("touchmove", e => {
+        if (pinch && e.touches.length === 2) {
+          e.preventDefault();
+          const [a, b] = e.touches;
+          setZoom(pinch.z * Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) / pinch.d, pinch.cx, pinch.cy);
+        }
+      }, { passive: false });
+      stage.addEventListener("touchend", e => { if (e.touches.length < 2) pinch = null; });
+      // drag to pan with a mouse (touch scrolling pans natively)
+      let drag = null;
+      stage.addEventListener("mousedown", e => { drag = { x: e.clientX, y: e.clientY, l: stage.scrollLeft, t: stage.scrollTop }; stage.classList.add("dragging"); });
+      window.addEventListener("mousemove", e => { if (drag) { stage.scrollLeft = drag.l - (e.clientX - drag.x); stage.scrollTop = drag.t - (e.clientY - drag.y); } });
+      window.addEventListener("mouseup", () => { drag = null; stage && stage.classList.remove("dragging"); });
+      // double-tap / double-click toggles between fit and 2.5x
+      stage.addEventListener("dblclick", e => setZoom(zoom > 1.2 ? 1 : 2.5, e.clientX, e.clientY));
+    }
+    function setZoom(z, px, py) {
+      z = Math.max(MIN, Math.min(MAX, z));
+      const r = stage.getBoundingClientRect();
+      px = px == null ? r.left + r.width / 2 : px; py = py == null ? r.top + r.height / 2 : py;
+      // keep the content under (px, py) in place while zooming
+      const fx = (stage.scrollLeft + px - r.left) / inner.offsetWidth, fy = (stage.scrollTop + py - r.top) / inner.offsetHeight;
+      zoom = z;
+      inner.style.width = (100 * zoom) + "%";
+      stage.scrollLeft = fx * inner.offsetWidth - (px - r.left);
+      stage.scrollTop = fy * inner.offsetHeight - (py - r.top);
+    }
+    function open(markup) {
+      if (!el) build();
+      inner.innerHTML = markup;
+      lastFocus = document.activeElement;
+      el.classList.add("open"); document.documentElement.classList.add("az-lock");
+      zoom = 1; inner.style.width = "100%"; stage.scrollLeft = 0; stage.scrollTop = 0;
+      el.querySelector(".az-close").focus();
+    }
+    function close() {
+      el.classList.remove("open"); document.documentElement.classList.remove("az-lock");
+      if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+    }
+    return { open, close };
+  })();
 
   return { render, PATH };
 })();

@@ -60,7 +60,7 @@ If something fails, the dashboard shows the error details on screen, and the bro
 
 ## Before the game
 
-After entering their name and role, learners see a short **How it works** screen, then can play a coached **asystole practice round** (it never counts and isn't recorded) or skip straight to the challenge. Hints above the scene explain each stage of the round as it happens.
+After entering their name and role, learners see a short **How it works** screen (with a link to download the RECOVER CPR ECG Algorithm PDF, which they're welcome to use while practicing), then can play a coached **asystole practice round** (it never counts and isn't recorded) or skip straight to the challenge. Hints above the scene explain each stage of the round as it happens.
 
 ## How a round works
 
@@ -68,7 +68,7 @@ After entering their name and role, learners see a short **How it works** screen
 2. **Pulse check:** compressions stop, the pulse checker says "I don't feel a pulse" ("I feel a pulse!" for ROSC), and the underlying rhythm sweeps across the monitor.
 3. **Answer (10 seconds):** Asystole, PEA, VF, Pulseless VT or ROSC. Keys 1–5 also work on a keyboard.
 4. **Scoring:** a correct answer earns 1,000 points if instant, falling steadily to 100 just before the buzzer (e.g. 550 at 5 seconds). A wrong answer or a timeout scores zero.
-5. **Feedback:** the correct answer, whether it's shockable, the RECOVER CPR ECG Algorithm with the path to the correct diagnosis highlighted in red (and the learner's answer marked if it was wrong), and a short explanation. On phones the algorithm appears as a numbered list of the same steps. The algorithm drawing is in `js/algorithm.js`.
+5. **Feedback:** the correct answer, whether it's shockable, the RECOVER CPR ECG Algorithm with the path to the correct diagnosis highlighted in red (and the learner's answer marked if it was wrong), and a short explanation. Tapping or clicking the algorithm opens it full screen, where it can be zoomed (pinch, double-tap, or the + / − buttons) and moved around. The algorithm drawing and viewer are in `js/algorithm.js`.
 
 The monitor shows standard ECG grid lines (one big box = 0.2 s) with tick marks every second, and an **HR** box to the right of the tracing that behaves like a patient monitor: `---` during compressions; once the monitor has seen two complexes (at least a second after compressions stop, longer for slow rhythms) it shows the rhythm's rate (drifting by a beat or two), `0` for asystole, `---` for fine and intermediate VF, and a number jumping around wildly for coarse VF. Each rhythm's HR behavior is set in `js/rhythms.js` (`hr: "none"` or `hr: "wild"`) and listed on `gallery.html`.
 
@@ -87,7 +87,7 @@ Everything is in `js/rhythms.js`. For each rhythm:
 - `teach` is the explanation paragraph.
 - The rate is set in the `fn:` line (e.g. `regular(60 / 38, ...)` for 38/min).
 
-After editing, change the version tag `?v=2026-10-04b` in the four HTML pages (any new value, e.g. `?v=2026-10-20`) so browsers load the new file rather than a saved copy. Check the result on `gallery.html`.
+After editing, change the version tag `?v=2026-10-04c` in the four HTML pages (any new value, e.g. `?v=2026-10-20`) so browsers load the new file rather than a saved copy. Check the result on `gallery.html`.
 
 ## Using the dashboard
 
