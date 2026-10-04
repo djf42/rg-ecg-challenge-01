@@ -34,10 +34,15 @@ window.RHYTHM_LIB = (function () {
   }
 
   // regular rhythm from a beat template; sums the last few beats so T waves overlap naturally
+  // LEAD: the first complex begins this many seconds after compressions stop,
+  // so it's visible as soon as the artifact clears
+  const LEAD = 0.08;
   function regular(interval, beat, opts) {
     opts = opts || {};
     return function (t, v) {
       if (t < 0) return 0;
+      t = t - LEAD;
+      if (t < 0) return wander(t, v.seed) + (opts.noise || 0.012) * fuzz(t, v.seed);
       const n = Math.floor(t / interval);
       let y = 0;
       for (let k = n; k >= Math.max(0, n - 2); k--) {
@@ -154,6 +159,12 @@ window.RHYTHM_LIB = (function () {
   //   a number near the rhythm's rate, "0" for asystole, "---" when the monitor can't count ("none"),
   //   or a number jumping around wildly ("wild"), as monitors sometimes do in VF.
   function hrMode(r) { return r.hr || (r.cat === "asys" ? "zero" : "rate"); }
+  // seconds after compressions stop before the HR box shows a number:
+  // at least 1 s, and for organized rhythms not until the second complex has appeared
+  function hrDelay(r) {
+    if (hrMode(r) !== "rate" || !r.rate) return 1.0;
+    return Math.max(1.0, LEAD + 60 / r.rate + 0.25);
+  }
   function hrDescribe(r) {
     const m = hrMode(r);
     return m === "none" ? "---" : m === "wild" ? "jumps around wildly" : m === "zero" ? "0" : "about " + r.rate;
@@ -165,5 +176,5 @@ window.RHYTHM_LIB = (function () {
   // per-round variation so repeat plays don't show identical strips
   function variant(seed) { return { seed: seed, amp: 0.92 + 0.16 * ((Math.sin(seed * 12.9898) * 43758.5453) % 1 + 1) % 1 }; }
 
-  return { CATS, RHYTHMS, catOf, byKey, compressionArtifact, variant, hrMode, hrDescribe };
+  return { CATS, RHYTHMS, catOf, byKey, compressionArtifact, variant, hrMode, hrDescribe, hrDelay };
 })();

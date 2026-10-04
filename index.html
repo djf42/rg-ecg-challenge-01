@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/brand.css?v=2026-10-03g">
+<link rel="stylesheet" href="css/brand.css?v=2026-10-04b">
 <style>
   /* ---- CPR scene ---- */
   .scene{position:relative;background:var(--ice);border-radius:var(--radius-md);overflow:hidden;margin:0 0 12px}
@@ -66,6 +66,13 @@
   .algo-steps li.final{font-family:var(--display);font-weight:800;color:var(--red);border-bottom:0}
   .algo-steps li.final::before{background:var(--red)}
   @media (max-width:560px){.algo-chart{display:none}.algo-steps{display:block}}
+  .howto-steps{list-style:none;margin:18px 0 20px;padding:0;counter-reset:s}
+  .howto-steps li{counter-increment:s;display:grid;grid-template-columns:38px 1fr;gap:4px 14px;padding:14px 0;border-bottom:1px solid var(--mist)}
+  .howto-steps li::before{content:counter(s);grid-row:1/3;width:32px;height:32px;border-radius:50%;background:var(--navy);color:#fff;font-weight:700;display:grid;place-items:center}
+  .howto-steps b{font-family:var(--display);font-size:19px}
+  .howto-steps span{color:var(--ink-muted)}
+  .coach{background:var(--navy);color:#fff;border-radius:var(--radius-md);padding:12px 16px;margin:0 0 12px;font-size:16px}
+  .coach b{color:var(--sky)}
 </style>
 <script>
   // Tell the shared data layer which game this is (separate leaderboards and analytics)
@@ -85,7 +92,7 @@
     <div class="rules-grid">
       <div><b>Up to 1,000 points</b><span>per correct answer, more the faster you are</span></div>
       <div><b>10 seconds</b><span>per rhythm after the pulse check</span></div>
-      <div><b>Your best score counts</b><span>play as often as you like; boards reset monthly</span></div>
+      <div><b>Your first score counts</b><span>for the leaderboard; play again anytime to beat your personal best</span></div>
     </div>
     <div id="modeNotice" class="notice hidden"></div>
     <div class="name-row">
@@ -110,11 +117,29 @@
     </div>
   </section>
 
+  <!-- ============ HOW IT WORKS ============ -->
+  <section id="screen-howto" class="sheet hidden">
+    <p class="eyebrow">ECG Rhythm Challenge</p>
+    <h2>How it works</h2>
+    <ol class="howto-steps">
+      <li><b>Compressions</b><span>Each rhythm starts with 3 seconds of chest compressions. The monitor shows only compression artifact, and the HR box shows ---.</span></li>
+      <li><b>Pulse check</b><span>Compressions stop and the pulse checker reports whether there's a pulse. The underlying rhythm appears on the monitor, and the HR box shows the heart rate when the monitor can count one.</span></li>
+      <li><b>Name the rhythm</b><span>Choose Asystole, PEA, VF, Pulseless VT or ROSC within 10 seconds <span style="white-space:nowrap">(or press 1–5)</span>. A correct answer earns up to 1,000 points, more the faster you are. A wrong answer or no answer scores 0.</span></li>
+      <li><b>See why</b><span>After each answer you'll see the RECOVER CPR ECG Algorithm with the path to the correct diagnosis highlighted.</span></li>
+    </ol>
+    <p class="notice">Only your first full game counts for the leaderboard, so try the practice round first. It doesn't count.</p>
+    <div class="row">
+      <button class="btn" id="practiceBtn">Try a practice round</button>
+      <button class="btn ghost" id="skipBtn">Skip to the challenge</button>
+    </div>
+  </section>
+
   <!-- ============ ROUND ============ -->
   <section id="screen-q" class="sheet hidden">
-    <div class="qhead"><p class="eyebrow">Rhythm <span id="qNum">1</span> of <span id="qTot">10</span></p><span class="running">Score <b id="runScore">0</b></span></div>
+    <div class="qhead"><p class="eyebrow" id="qLabel">Rhythm 1 of 10</p><span class="running" id="runWrap">Score <b id="runScore">0</b></span></div>
     <div class="progress"><i id="progBar"></i></div>
 
+    <div class="coach hidden" id="coach"></div>
     <div class="scene" id="scene">
       <span class="status" id="status">Chest compressions</span>
       <svg viewBox="0 0 640 240" role="img" aria-labelledby="sceneTitle">
@@ -202,8 +227,9 @@
     <p class="muted">points</p>
     <div class="stats">
       <div><b id="statCorrect">0/10</b>correct</div>
-      <div><b id="statRank">–</b>rank this month</div>
-      <div><b id="statBest">–</b>your best this month</div>
+      <div><b id="statBoard">–</b>leaderboard score</div>
+      <div><b id="statRank">–</b>leaderboard rank</div>
+      <div><b id="statBest">–</b>personal best</div>
     </div>
     <p id="postStatus" class="small muted"></p>
     <div class="row" style="margin-bottom:26px"><button class="btn" id="againBtn">Play again</button></div>
@@ -232,22 +258,21 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="js/config.js?v=2026-10-03g"></script>
-<script src="js/store.js?v=2026-10-03g"></script>
-<script src="js/strip.js?v=2026-10-03g"></script>
-<script src="js/rhythms.js?v=2026-10-03g"></script>
-<script src="js/monitor.js?v=2026-10-03g"></script>
-<script src="js/algorithm.js?v=2026-10-03g"></script>
+<script src="js/config.js?v=2026-10-04b"></script>
+<script src="js/store.js?v=2026-10-04b"></script>
+<script src="js/strip.js?v=2026-10-04b"></script>
+<script src="js/rhythms.js?v=2026-10-04b"></script>
+<script src="js/monitor.js?v=2026-10-04b"></script>
+<script src="js/algorithm.js?v=2026-10-04b"></script>
 <script>
 const CONFIG = window.APP_CONFIG, L = window.RHYTHM_LIB, $ = id => document.getElementById(id);
 const COMPRESS_S = 3, ANSWER_S = 10, MAX_PTS = 1000, MIN_PTS = 100;
-const HR_LAG_S = 1.0;      // monitors need a few beats before they display a rate
 const N = L.RHYTHMS.length;
 
 const state = { order: [], i: 0, score: 0, results: [], name: "", role: "", phase: "idle", t0: 0, answerT0: 0, raf: null, variant: null, myUid: null, month: null };
 let mon = null;
 
-function show(name) { ["start", "q", "end"].forEach(s => $("screen-" + s).classList.toggle("hidden", s !== name)); window.scrollTo(0, 0); }
+function show(name) { ["start", "howto", "q", "end"].forEach(s => $("screen-" + s).classList.toggle("hidden", s !== name)); window.scrollTo(0, 0); }
 function footer() {
   const em = document.createElement("em"); em.textContent = "Learn to lead when it matters most.";
   const s = document.createElement("span"); s.textContent = CONFIG.footer || "";
@@ -263,7 +288,6 @@ function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { co
 /* ---------------- start ---------------- */
 function init() {
   footer();
-  $("qTot").textContent = N;
   const saved = Store.LS.get("cprchal:player", {});        // shared with the misconceptions game
   $("first").value = saved.first || ""; $("last").value = saved.last || ""; $("role").value = saved.role || "";
   if (!Store.live) { $("modeNotice").textContent = "Demo mode: scores and results are saved only on this device until the shared database is connected."; $("modeNotice").classList.remove("hidden"); }
@@ -278,10 +302,22 @@ function start() {
   if (!role) { $("joinErr").textContent = "Choose your role."; $("role").focus(); return; }
   $("joinErr").textContent = "";
   Store.LS.set("cprchal:player", { first, last, role });
-  Object.assign(state, { order: shuffle(L.RHYTHMS), i: 0, score: 0, results: [], name: displayName(first, last).slice(0, 30), role });
-  show("q");
-  sizeMonitor();
-  startRound();
+  Object.assign(state, { name: displayName(first, last).slice(0, 30), role });
+  show("howto");
+}
+
+function beginPractice() {
+  Object.assign(state, { practice: true, order: [L.byKey("asys")], i: 0, score: 0, results: [] });
+  show("q"); sizeMonitor(); startRound();
+}
+function beginChallenge() {
+  Object.assign(state, { practice: false, order: shuffle(L.RHYTHMS), i: 0, score: 0, results: [] });
+  show("q"); sizeMonitor(); startRound();
+}
+function coach(html) {
+  const c = $("coach");
+  if (!state.practice) { c.classList.add("hidden"); return; }
+  c.innerHTML = html; c.classList.remove("hidden");
 }
 
 /* ---------------- choices ---------------- */
@@ -309,8 +345,10 @@ function startRound() {
   state.phase = "compress";
   state.variant = L.variant(Math.random() * 100);
   state.artSeed = Math.random() * 100;
-  $("qNum").textContent = state.i + 1;
-  $("progBar").style.width = (state.i / N * 100) + "%";
+  $("qLabel").textContent = state.practice ? "Practice round" : "Rhythm " + (state.i + 1) + " of " + N;
+  $("runWrap").style.visibility = state.practice ? "hidden" : "visible";
+  $("progBar").style.width = state.practice ? "0%" : (state.i / N * 100) + "%";
+  coach("<b>Practice round</b> (doesn't count). Watch the monitor: during compressions it shows only artifact, and the HR box shows ---. Wait for the pulse check.");
   $("runScore").textContent = state.score.toLocaleString();
   $("reveal").classList.add("hidden");
   $("scene").querySelector("svg").classList.add("compressing");
@@ -331,7 +369,7 @@ function signal(t) {
   const r = state.order[state.i];
   if (t < COMPRESS_S) return L.compressionArtifact(t, state.artSeed);
   const x = t - COMPRESS_S, v = r.fn(x, state.variant);
-  if (x < 0.15) { const a = L.compressionArtifact(t, state.artSeed) * (1 - x / 0.15) * 0.4; return v + a; }   // brief settle as compressions stop
+  if (x < 0.06) { const a = L.compressionArtifact(t, state.artSeed) * (1 - x / 0.06) * 0.3; return v + a; }   // brief settle as compressions stop
   return v;
 }
 
@@ -352,7 +390,7 @@ function loop(now) {
 
 function updateHR(T) {
   const r = state.order[state.i], mode = L.hrMode(r);
-  if (T < COMPRESS_S + HR_LAG_S || mode === "none") { $("hrVal").textContent = "---"; return; }
+  if (T < COMPRESS_S + L.hrDelay(r) || mode === "none") { $("hrVal").textContent = "---"; return; }
   if (mode === "zero") { $("hrVal").textContent = "0"; return; }
   if (T < state.hrNext) return;
   if (mode === "wild") {
@@ -372,6 +410,7 @@ function beginAnswer(now) {
   $("status").textContent = "Pulse check"; $("status").className = "status check";
   $("prompt").textContent = "Name the rhythm"; $("prompt").classList.remove("wait");
   resetChoices(true);
+  coach("<b>Pulse check.</b> Now name the rhythm: use the pulse report, the trace and the HR box, then tap your answer (or press 1–5). You have 10 seconds.");
 }
 
 function answer(catKey) {
@@ -381,8 +420,10 @@ function answer(catKey) {
   const elapsed = Math.min(ANSWER_S, (performance.now() - state.answerT0) / 1000);
   const timedOut = catKey === null, correct = !timedOut && catKey === r.cat;
   const pts = correct ? Math.round(MAX_PTS - (MAX_PTS - MIN_PTS) * elapsed / ANSWER_S) : 0;
-  state.score += pts;
-  state.results.push({ r, chosen: catKey, correct, pts, elapsed, timedOut });
+  if (!state.practice) {
+    state.score += pts;
+    state.results.push({ r, chosen: catKey, correct, pts, elapsed, timedOut });
+  }
 
   [...$("choices").children].forEach(b => {
     b.disabled = true;
@@ -391,7 +432,7 @@ function answer(catKey) {
   });
   $("verdict").className = "verdict " + (correct ? "good" : "bad");
   $("verdictText").textContent = correct ? "Correct" : (timedOut ? "Time's up: no points" : "Not quite");
-  $("verdictPts").textContent = "+" + pts.toLocaleString();
+  $("verdictPts").textContent = state.practice ? (correct ? "+" + pts.toLocaleString() + " (practice)" : "practice") : "+" + pts.toLocaleString();
   const cat = L.catOf(r.cat);
   $("rname").replaceChildren(document.createTextNode(cat.label));
   const chip = document.createElement("span"); chip.className = "chip " + (cat.shockable ? "shock" : "noshock"); chip.textContent = cat.shockable ? "Shockable" : (r.cat === "rosc" ? "Perfusing rhythm" : "Non-shockable");
@@ -402,7 +443,8 @@ function answer(catKey) {
   $("runScore").textContent = $("runScore2").textContent = state.score.toLocaleString();
   $("prompt").textContent = correct ? "Nice work" : "Here's the answer";
   $("clock").textContent = timedOut ? "0" : elapsed.toFixed(1) + " s"; $("clock").classList.remove("late");
-  $("nextBtn").textContent = state.i === N - 1 ? "See my results" : "Next rhythm";
+  $("nextBtn").textContent = state.practice ? "Start the challenge" : (state.i === N - 1 ? "See my results" : "Next rhythm");
+  coach("<b>That's how every round works.</b> Read the feedback, then start the challenge: 10 rhythms in random order. Your first full game is your leaderboard score.");
   $("reveal").classList.remove("hidden");
   $("nextBtn").focus({ preventScroll: true });
   $("reveal").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
@@ -410,6 +452,7 @@ function answer(catKey) {
 function addTag(b, text) { const s = document.createElement("span"); s.className = "tag"; s.textContent = text; b.appendChild(s); }
 
 function next() {
+  if (state.practice) { window.scrollTo(0, 0); beginChallenge(); return; }
   if (state.i < N - 1) { state.i++; window.scrollTo(0, 0); startRound(); }
   else finish();
 }
@@ -422,7 +465,7 @@ async function finish() {
   const totalMs = Math.round(state.results.reduce((s, x) => s + x.elapsed, 0) * 1000);
   $("finalScore").textContent = state.score.toLocaleString();
   $("statCorrect").textContent = nCorrect + "/" + N;
-  $("statRank").textContent = "–"; $("statBest").textContent = "–";
+  $("statRank").textContent = "–"; $("statBest").textContent = "–"; $("statBoard").textContent = "–";
   $("pbBadge").classList.add("hidden");
   renderReview();
   const answers = state.results.map((x, i) => ({ q: i + 1, k: x.r.key, r: x.chosen || "", c: x.correct, ms: Math.round(x.elapsed * 1000), to: x.timedOut }));
@@ -430,13 +473,14 @@ async function finish() {
     $("postStatus").textContent = "Saving your results\u2026";
     const out = await Store.submit({ name: state.name, role: state.role, score: state.score, correct: nCorrect, total: N, timeMs: totalMs, answers });
     state.myUid = out.uid; state.month = out.month;
-    const m = out.bests[out.month];
-    $("statBest").textContent = m.best.score.toLocaleString();
-    if (m.improved && m.hadPrevious) $("pbBadge").classList.remove("hidden");
-    $("postStatus").textContent = m.improved
-      ? (Store.live ? "Your score is on the leaderboard as " + state.name + "." : "Demo mode: your score is saved on this device only.")
-      : "Your best score this month is still on the board. Play again to beat it.";
-    const rank = await Store.rankIn(out.month, m.best.score);
+    $("statBoard").textContent = out.board.score.toLocaleString();
+    $("statBest").textContent = out.pb.score.toLocaleString();
+    if (out.newPB && out.hadPB) $("pbBadge").classList.remove("hidden");
+    $("postStatus").textContent = (out.posted
+      ? "This was your first game, so it's your leaderboard score" + (Store.live ? ", posted as " + state.name + "." : " (demo mode: saved on this device only).")
+        + " Only your first game counts for the leaderboard, but play as often as you like to beat your personal best."
+      : "Only your first game counts for the leaderboard, so this game was practice. Keep playing to beat your personal best.");
+    const rank = await Store.rankIn("all", out.board.score);
     $("statRank").textContent = rank ? "#" + rank : "–";
   } catch (e) {
     console.error(e);
@@ -494,6 +538,8 @@ function sizeMonitor() {
 $("startBtn").addEventListener("click", start);
 ["first", "last"].forEach(id => $(id).addEventListener("keydown", e => { if (e.key === "Enter") start(); }));
 $("nextBtn").addEventListener("click", next);
+$("practiceBtn").addEventListener("click", beginPractice);
+$("skipBtn").addEventListener("click", beginChallenge);
 $("againBtn").addEventListener("click", () => { show("start"); Strip.hero($("heroStrip")); });
 document.addEventListener("keydown", e => {
   if (state.phase === "answer" && /^[1-5]$/.test(e.key)) answer(L.CATS[+e.key - 1].key);

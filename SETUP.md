@@ -4,7 +4,7 @@ A standalone game with its own GitHub repository and web address. It uses the sa
 
 | Page | Who uses it | What it does |
 |---|---|---|
-| `index.html` | Learners | The game: 10 arrest rhythms in random order, 10 seconds each. |
+| `index.html` | Learners | The game: a How it works screen and optional practice round, then 10 arrest rhythms in random order, 10 seconds each. Each player's first game goes on the leaderboard. |
 | `leaderboard.html` | Anyone | Public, view-only leaderboard (this month and all time). |
 | `dashboard.html` | You and named colleagues | Private analytics: accuracy by rhythm, what each rhythm was mistaken for, missed and inappropriate shocks. |
 | `gallery.html` | You | All ten rhythm strips side by side, for clinical review. Not linked from the game. |
@@ -58,6 +58,10 @@ If something fails, the dashboard shows the error details on screen, and the bro
 
 ---
 
+## Before the game
+
+After entering their name and role, learners see a short **How it works** screen, then can play a coached **asystole practice round** (it never counts and isn't recorded) or skip straight to the challenge. Hints above the scene explain each stage of the round as it happens.
+
 ## How a round works
 
 1. **Compressions (3 seconds):** the compressor animation runs and the monitor shows compression artifact.
@@ -66,7 +70,15 @@ If something fails, the dashboard shows the error details on screen, and the bro
 4. **Scoring:** a correct answer earns 1,000 points if instant, falling steadily to 100 just before the buzzer (e.g. 550 at 5 seconds). A wrong answer or a timeout scores zero.
 5. **Feedback:** the correct answer, whether it's shockable, the RECOVER CPR ECG Algorithm with the path to the correct diagnosis highlighted in red (and the learner's answer marked if it was wrong), and a short explanation. On phones the algorithm appears as a numbered list of the same steps. The algorithm drawing is in `js/algorithm.js`.
 
-The monitor shows standard ECG grid lines (one big box = 0.2 s) with tick marks every second, and an **HR** box to the right of the tracing that behaves like a patient monitor: `---` during compressions; about a second after compressions stop it shows the rhythm's rate (drifting by a beat or two), `0` for asystole, `---` for fine and intermediate VF, and a number jumping around wildly for coarse VF. Each rhythm's HR behavior is set in `js/rhythms.js` (`hr: "none"` or `hr: "wild"`) and listed on `gallery.html`.
+The monitor shows standard ECG grid lines (one big box = 0.2 s) with tick marks every second, and an **HR** box to the right of the tracing that behaves like a patient monitor: `---` during compressions; once the monitor has seen two complexes (at least a second after compressions stop, longer for slow rhythms) it shows the rhythm's rate (drifting by a beat or two), `0` for asystole, `---` for fine and intermediate VF, and a number jumping around wildly for coarse VF. Each rhythm's HR behavior is set in `js/rhythms.js` (`hr: "none"` or `hr: "wild"`) and listed on `gallery.html`.
+
+## Leaderboard rules
+
+Leaderboards are **first-score**: only each player's first game is posted, and the database rules prevent it from ever being changed. That keeps the boards fair if prizes are offered. Players can keep playing to beat their **personal best**, which the results screen shows alongside their leaderboard score (with a "New personal best" badge), but later games never change the leaderboard. Every game, first or not, still goes to the dashboard.
+
+- **All time** lists every player's first game.
+- **This month** lists the players whose first game was this month, so each player appears on one monthly board only.
+- A player is identified by their browser. Someone who switches devices or clears their browser data could post a second "first" score under a new identity. For prizes, check winners' names, and remember that the Docebo version will tie scores to real learner accounts.
 
 ## Editing rhythms and teaching text
 
@@ -75,7 +87,7 @@ Everything is in `js/rhythms.js`. For each rhythm:
 - `teach` is the explanation paragraph.
 - The rate is set in the `fn:` line (e.g. `regular(60 / 38, ...)` for 38/min).
 
-After editing, change the version tag `?v=2026-10-03g` in the four HTML pages (any new value, e.g. `?v=2026-10-20`) so browsers load the new file rather than a saved copy. Check the result on `gallery.html`.
+After editing, change the version tag `?v=2026-10-04b` in the four HTML pages (any new value, e.g. `?v=2026-10-20`) so browsers load the new file rather than a saved copy. Check the result on `gallery.html`.
 
 ## Using the dashboard
 
