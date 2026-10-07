@@ -129,11 +129,11 @@
       const list = LS.get(G.prefix + ":demoAttempts", []); list.push(attempt); LS.set(G.prefix + ":demoAttempts", list);
     }
 
-    // 2. leaderboard: first game only
+    // 2. leaderboard: first game only (players who choose not to give a name are never posted)
     const first = await getMine("all", uid);
     const rec = Object.assign({ name: result.name, role: result.role }, base);
     let posted = false;
-    if (!first) {
+    if (!first && result.name) {
       await putEntry("all", uid, rec);
       await putEntry(month, uid, rec);
       posted = true;

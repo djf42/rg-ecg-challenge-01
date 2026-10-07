@@ -23,7 +23,10 @@
   .cta{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:var(--navy);color:var(--white);border-radius:var(--radius-md);padding:18px 20px;margin-top:24px}
   .cta p{margin:0;font-family:var(--display);font-weight:700;font-size:20px}
 </style>
-<script>window.GAME = { boards: "rhythm_boards", attempts: "rhythm_attempts", prefix: "rhythm" };</script>
+<script>window.GAME = { boards: "rhythm_boards", attempts: "rhythm_attempts", prefix: "rhythm" };
+  // ?cohort=cornell shows a cohort's own leaderboard and results instead of the public game's
+  (function () { var c = new URLSearchParams(location.search).get("cohort"); if (c && ["cornell"].indexOf(c) >= 0) { GAME.boards = "rhythm_" + c + "_boards"; GAME.attempts = "rhythm_" + c + "_attempts"; GAME.prefix = "rhythm_" + c; GAME.cohort = c; document.title = c.charAt(0).toUpperCase() + c.slice(1) + " · " + document.title; } })();
+</script>
 </head>
 <body>
 <div class="wrap">
